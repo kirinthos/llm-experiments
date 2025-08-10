@@ -5,8 +5,8 @@
 export interface Message {
   id: string;
   content: string;
-  role: 'user' | 'assistant';
-  timestamp: Date;
+  role: 'user' | 'assistant' | 'system';
+  timestamp: string;
 }
 
 export interface Model {
@@ -20,8 +20,8 @@ export interface Conversation {
   id: string;
   messages: Message[];
   model: Model;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ChatResponse {
@@ -32,8 +32,14 @@ export interface ChatResponse {
 /**
  * Abstract interface for communicating with AI models
  */
+export interface ChatOptions {
+  temperature?: number;
+  maxTokens?: number;
+  toolsEnabled?: boolean;
+}
+
 export interface AIProvider {
-  sendMessage(messages: Message[], model: Model): Promise<ChatResponse>;
+  sendMessage(messages: Message[], model: Model, options?: ChatOptions): Promise<ChatResponse>;
   getAvailableModels(): Model[];
 }
 

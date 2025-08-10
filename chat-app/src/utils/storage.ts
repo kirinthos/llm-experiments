@@ -9,15 +9,7 @@ const STORAGE_KEY = 'chat-app-conversation';
 export class ConversationStorage {
   static saveConversation(conversation: Conversation): void {
     try {
-      const serialized = JSON.stringify({
-        ...conversation,
-        messages: conversation.messages.map(msg => ({
-          ...msg,
-          timestamp: msg.timestamp.toISOString()
-        })),
-        createdAt: conversation.createdAt.toISOString(),
-        updatedAt: conversation.updatedAt.toISOString()
-      });
+      const serialized = JSON.stringify(conversation);
       localStorage.setItem(STORAGE_KEY, serialized);
     } catch (error) {
       console.error('Failed to save conversation:', error);
@@ -30,15 +22,7 @@ export class ConversationStorage {
       if (!stored) return null;
 
       const parsed = JSON.parse(stored);
-      return {
-        ...parsed,
-        messages: parsed.messages.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        })),
-        createdAt: new Date(parsed.createdAt),
-        updatedAt: new Date(parsed.updatedAt)
-      };
+      return parsed as Conversation;
     } catch (error) {
       console.error('Failed to load conversation:', error);
       return null;
@@ -54,12 +38,13 @@ export class ConversationStorage {
   }
 
   static createNewConversation(model: Model): Conversation {
+    const now = new Date().toISOString();
     return {
       id: this.generateId(),
       messages: [],
       model,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: now,
+      updatedAt: now
     };
   }
 
@@ -67,7 +52,7 @@ export class ConversationStorage {
     const updated = {
       ...conversation,
       messages: [...conversation.messages, message],
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     };
     this.saveConversation(updated);
     return updated;
@@ -77,7 +62,7 @@ export class ConversationStorage {
     const updated = {
       ...conversation,
       model,
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     };
     this.saveConversation(updated);
     return updated;
