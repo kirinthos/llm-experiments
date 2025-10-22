@@ -3,6 +3,7 @@
  */
 
 import type { AIProvider, Model, Message, ChatResponse } from '../types';
+import { getApiUrl } from '../config';
 
 export interface Tool {
   id: string;
@@ -18,8 +19,8 @@ export class APIProvider implements AIProvider {
   private availableModels: Model[] = [];
   private availableTools: Tool[] = [];
 
-  constructor(baseUrl: string = 'http://localhost:5000') {
-    this.baseUrl = baseUrl;
+  constructor(baseUrl?: string) {
+    this.baseUrl = baseUrl || getApiUrl();
   }
 
   async initialize(): Promise<void> {
@@ -36,46 +37,28 @@ export class APIProvider implements AIProvider {
   }
 
   private async loadModels(): Promise<void> {
-    try {
-      const response = await fetch(`${this.baseUrl}/models`);
-      if (!response.ok) {
-        throw new Error(`Failed to load models: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      this.availableModels = data.models.map((model: any) => ({
-        id: model.id,
-        name: model.name,
-        provider: model.provider as 'openai' | 'gemini' | 'claude',
-        description: model.description
-      }));
-    } catch (error) {
-      console.error('Error loading models:', error);
-      // Fallback to default models if API is not available
-      this.availableModels = [
-        {
-          id: 'gpt-4o-mini',
-          name: 'GPT-4o Mini',
-          provider: 'openai',
-          description: 'Fast and efficient OpenAI model'
-        }
-      ];
+    const response = await fetch(`${this.baseUrl}/models`);
+    if (!response.ok) {
+      throw new Error(`Failed to load models: ${response.statusText}`);
     }
+    
+    const data = await response.json();
+    this.availableModels = data.models.map((model: any) => ({
+      id: model.id,
+      name: model.name,
+      provider: model.provider as 'openai' | 'gemini' | 'claude',
+      description: model.description
+    }));
   }
 
   private async loadTools(): Promise<void> {
-    try {
-      const response = await fetch(`${this.baseUrl}/tools`);
-      if (!response.ok) {
-        throw new Error(`Failed to load tools: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      this.availableTools = data.tools;
-    } catch (error) {
-      console.error('Error loading tools:', error);
-      this.availableTools = [];
+    const response = await fetch(`${this.baseUrl}/tools`);
+    if (!response.ok) {
+      throw new Error(`Failed to load tools: ${response.statusText}`);
     }
+    
+    const data = await response.json();
+    this.availableTools = data.tools;
   }
 
   async sendMessage(messages: Message[], model: Model): Promise<ChatResponse> {
@@ -110,7 +93,8 @@ export class APIProvider implements AIProvider {
       const data = await response.json();
       
       return {
-        content: data.response.content || 'No response generated'
+        content: data.response.content || 'No response generated',
+        thinkingSteps: data.thinking_steps || []
       };
 
     } catch (error) {
@@ -133,7 +117,10 @@ export class APIProvider implements AIProvider {
         body: JSON.stringify({
           message,
           model: model.id,
-          provider: model.provider
+          provider: model.provider,
+          use_tools: true,
+          temperature: 0.7,
+          max_tokens: 1000
         })
       });
 
@@ -145,7 +132,8 @@ export class APIProvider implements AIProvider {
       const data = await response.json();
       
       return {
-        content: data.response || 'No response generated'
+        content: data.response || 'No response generated',
+        thinkingSteps: data.thinking_steps || []
       };
 
     } catch (error) {

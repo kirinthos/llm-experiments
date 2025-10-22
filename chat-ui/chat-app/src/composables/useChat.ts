@@ -1,6 +1,5 @@
 import { ref, computed, readonly } from 'vue'
 import type { AIProvider, Model, Message, Conversation } from '../types'
-import { TestAIProvider } from '../providers/testProvider'
 import { APIProvider } from '../providers/apiProvider'
 import type { Tool } from '../providers/apiProvider'
 import { ConversationStorage, generateMessageId } from '../utils/storage'
@@ -9,7 +8,8 @@ export function useChat() {
   const provider = ref<AIProvider>()
   const conversation = ref<Conversation>()
   const isLoading = ref(false)
-  const useRealAPI = ref(true)
+  const connectionError = ref<string>('')
+  const isConnected = ref(false)
   const availableTools = ref<Tool[]>([])
   const toolsEnabled = ref(true)
 
@@ -20,29 +20,29 @@ export function useChat() {
 
   async function initializeProvider() {
     try {
-      if (useRealAPI.value) {
-        const apiProvider = new APIProvider()
-        await apiProvider.initialize()
-        
-        // Check if API is healthy
-        const isHealthy = await apiProvider.healthCheck()
-        if (isHealthy) {
-          provider.value = apiProvider
-          availableTools.value = apiProvider.getAvailableTools()
-          console.log('✅ Connected to API server')
-          return
-        }
+      connectionError.value = ''
+      isConnected.value = false
+      
+      const apiProvider = new APIProvider()
+      await apiProvider.initialize()
+      
+      // Check if API is healthy
+      const isHealthy = await apiProvider.healthCheck()
+      if (!isHealthy) {
+        throw new Error('API server health check failed')
       }
       
-      // Fallback to test provider
-      console.log('🔄 Using test provider')
-      provider.value = new TestAIProvider()
-      useRealAPI.value = false
-      availableTools.value = []
+      provider.value = apiProvider
+      availableTools.value = apiProvider.getAvailableTools()
+      isConnected.value = true
+      console.log('✅ Connected to API server')
+      
     } catch (error) {
       console.error('Failed to initialize provider:', error)
-      provider.value = new TestAIProvider()
-      useRealAPI.value = false
+      const errorMessage = error instanceof Error ? error.message : 'Unknown connection error'
+      connectionError.value = `Failed to connect to API server: ${errorMessage}`
+      isConnected.value = false
+      provider.value = undefined
       availableTools.value = []
     }
   }
@@ -58,7 +58,7 @@ export function useChat() {
   }
 
   async function sendMessage(content: string): Promise<void> {
-    if (isLoading.value || !content.trim() || !provider.value || !conversation.value) {
+    if (isLoading.value || !content.trim() || !provider.value || !conversation.value || !isConnected.value) {
       return
     }
 
@@ -93,7 +93,8 @@ export function useChat() {
         id: generateMessageId(),
         role: 'assistant',
         content: response.content,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        thinkingSteps: response.thinkingSteps
       }
 
       conversation.value.messages.push(assistantMessage)
@@ -155,7 +156,8 @@ export function useChat() {
     // State
     conversation: readonly(conversation),
     isLoading: readonly(isLoading),
-    useRealAPI: readonly(useRealAPI),
+    connectionError: readonly(connectionError),
+    isConnected: readonly(isConnected),
     availableTools: readonly(availableTools),
     toolsEnabled: readonly(toolsEnabled),
     

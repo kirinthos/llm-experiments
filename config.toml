@@ -1,0 +1,76 @@
+# Universal AI Chat Configuration
+# This file controls the communication between UI and API servers
+
+[server]
+# API Server Configuration
+api_host = "localhost"
+api_port = 4090
+api_url = "http://localhost:4090"
+
+# Frontend Server Configuration  
+frontend_host = "localhost"
+frontend_port = 4091
+frontend_url = "http://localhost:4091"
+
+# Health check and timeout settings
+health_check_timeout = 5000 # milliseconds
+health_check_interval = 30  # seconds
+
+[development]
+# Development server settings
+auto_restart = true
+debug_mode = false
+log_level = "INFO"
+
+[api]
+# API specific settings
+cors_origins = ["http://localhost:4091"]
+max_request_size = "16MB"
+request_timeout = 30                     # seconds
+
+[mcp]
+# MCP (Model Context Protocol) settings
+enabled = true
+tools_timeout = 10 # seconds
+max_tools = 50
+
+[models]
+# Model configuration
+default_provider = "openai"
+default_model = "gpt-4o-mini"
+max_tokens_default = 1000
+temperature_default = 0.7
+
+# Available models per provider
+[models.openai]
+enabled = true
+models = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"]
+
+[models.gemini]
+enabled = true
+models = [
+    "gemini-2.5-flash",
+    "gemini-1.5-pro",
+    "gemini-1.5-flash",
+    "gemini-1.0-pro",
+    "gemini-1.0-ultra",
+]
+
+[ui]
+# UI specific settings
+theme = "auto"             # auto, light, dark
+auto_refresh_status = true
+show_debug_info = false
+
+[logging]
+# Logging configuration
+level = "INFO"
+file = "app.log"
+max_size = "10MB"
+backup_count = 5
+
+[security]
+# Security settings
+enable_cors = true
+allowed_hosts = ["localhost", "127.0.0.1"]
+max_connections = 100

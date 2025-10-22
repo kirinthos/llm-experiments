@@ -116,6 +116,10 @@ class AIProvider(ABC):
         if tool_name in self.tools:
             del self.tools[tool_name]
     
+    def clear_tools(self):
+        """Remove all tools"""
+        self.tools.clear()
+    
     def get_tools(self) -> List[ToolDefinition]:
         """Get all registered tools"""
         return list(self.tools.values())

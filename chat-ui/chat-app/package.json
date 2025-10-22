@@ -6,14 +6,19 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:health": "node tests/server-health.test.js",
+    "test:monitor": "node tests/server-health.test.js --monitor"
   },
   "devDependencies": {
     "typescript": "~5.8.3",
     "vite": "^7.1.0"
   },
   "dependencies": {
+    "@types/marked": "^5.0.2",
     "@vitejs/plugin-vue": "^6.0.1",
+    "highlight.js": "^11.11.1",
+    "marked": "^16.1.2",
     "vue": "^3.5.18"
   }
 }

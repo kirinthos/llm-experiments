@@ -5,20 +5,44 @@
         <span class="message-role">{{ headerText }}</span>
         <span class="message-time">{{ formattedTime }}</span>
       </div>
-      <div class="message-text">{{ message.content }}</div>
+      <ThinkingProcess
+        v-if="shouldShowThinking && message.thinkingSteps"
+        :thinking-steps="message.thinkingSteps"
+      />
+      <div class="message-text">
+        <MarkdownRenderer
+          v-if="shouldRenderMarkdown"
+          :content="message.content"
+          @citations="handleCitations"
+        />
+        <span v-else>{{ message.content }}</span>
+      </div>
+      <CitationPills v-if="citations.length > 0" :citations="citations" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import type { Message } from "../types";
+import MarkdownRenderer from "./MarkdownRenderer.vue";
+import CitationPills from "./CitationPills.vue";
+import ThinkingProcess from "./ThinkingProcess.vue";
+
+interface Citation {
+  id: number;
+  url: string;
+  title: string;
+  domain: string;
+}
 
 interface Props {
   message: Message;
 }
 
 const props = defineProps<Props>();
+
+const citations = ref<Citation[]>([]);
 
 const messageClass = computed(() => {
   return {
@@ -47,6 +71,25 @@ const formattedTime = computed(() => {
   const date = new Date(props.message.timestamp);
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 });
+
+// Determine if we should render markdown (for assistant messages)
+const shouldRenderMarkdown = computed(() => {
+  return props.message.role === "assistant" && props.message.content.length > 0;
+});
+
+// Determine if we should show thinking process (for assistant messages with thinking steps)
+const shouldShowThinking = computed(() => {
+  return (
+    props.message.role === "assistant" &&
+    props.message.thinkingSteps &&
+    props.message.thinkingSteps.length > 0
+  );
+});
+
+// Handle citations from markdown renderer
+const handleCitations = (newCitations: Citation[]) => {
+  citations.value = newCitations;
+};
 </script>
 
 <style scoped>
@@ -110,20 +153,11 @@ const formattedTime = computed(() => {
   font-size: 0.95rem;
   line-height: 1.6;
   word-wrap: break-word;
+}
+
+/* Keep simple styling for user messages (non-markdown) */
+.user-message .message-text span {
   white-space: pre-wrap;
-}
-
-.message-text code {
-  background-color: rgba(0, 0, 0, 0.1);
-  padding: 2px 4px;
-  border-radius: var(--radius-sm, 0.375rem);
-  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
-    monospace;
-  font-size: 0.875em;
-}
-
-.user-message .message-text code {
-  background-color: rgba(255, 255, 255, 0.2);
 }
 
 @keyframes fadeInUp {

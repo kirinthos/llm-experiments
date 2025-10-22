@@ -4,12 +4,10 @@
     <header class="header">
       <div class="header-left">
         <h1 class="app-title">Universal AI Chat</h1>
-        <div class="connection-status" :class="{ 'test-mode': !useRealAPI }">
-          {{ useRealAPI ? "🟢 Connected to API" : "🟡 Test Mode" }}
-        </div>
+        <ServerStatus />
       </div>
 
-      <div class="header-right">
+      <div class="header-controls">
         <ModelSelector
           :available-models="availableModels"
           :current-model="currentModel"
@@ -24,13 +22,23 @@
 
         <ThemeSelector />
 
+        <div class="header-divider"></div>
+
         <button class="clear-button" @click="clearChat">🗑️ Clear</button>
       </div>
     </header>
 
     <!-- Messages -->
     <div class="messages-container" ref="messagesRef">
-      <div v-if="messages.length === 0" class="welcome-message">
+      <div v-if="connectionError" class="error-message">
+        <h2>⚠️ Connection Error</h2>
+        <p>{{ connectionError }}</p>
+        <button @click="initialize" class="retry-button">
+          🔄 Retry Connection
+        </button>
+      </div>
+
+      <div v-else-if="messages.length === 0" class="welcome-message">
         <h2>Welcome to Universal AI Chat! 🤖</h2>
         <p>Start a conversation with your AI assistant.</p>
         <div class="example-prompts">
@@ -39,7 +47,7 @@
             <li>"Convert 72°F to Celsius"</li>
             <li>"Generate 2 random numbers and add them"</li>
             <li>"What's the current time?"</li>
-            <li v-if="useRealAPI">"Take a screenshot of google.com"</li>
+            <li v-if="isConnected">"Take a screenshot of google.com"</li>
           </ul>
         </div>
       </div>
@@ -61,7 +69,12 @@
     </div>
 
     <!-- Input -->
-    <ChatInput :is-loading="isLoading" @send="sendMessage" />
+    <ChatInput
+      :is-loading="isLoading"
+      :is-disabled="!isConnected || !!connectionError"
+      :error-message="connectionError"
+      @send="sendMessage"
+    />
   </div>
 </template>
 
@@ -73,13 +86,15 @@ import ChatInput from "./ChatInput.vue";
 import ModelSelector from "./ModelSelector.vue";
 import ToolsDropdown from "./ToolsDropdown.vue";
 import ThemeSelector from "./ThemeSelector.vue";
+import ServerStatus from "./ServerStatus.vue";
 
 const {
   messages,
   currentModel,
   availableModels,
   isLoading,
-  useRealAPI,
+  connectionError,
+  isConnected,
   availableTools,
   toolsEnabled,
   initialize,
@@ -151,29 +166,22 @@ onMounted(async () => {
   color: var(--color-text);
 }
 
-.connection-status {
-  padding: var(--spacing-xs, 0.25rem) var(--spacing-sm, 0.5rem);
-  background-color: var(--color-success);
-  color: white;
-  border-radius: var(--radius-md, 0.5rem);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.connection-status.test-mode {
-  background-color: var(--color-warning);
-  color: var(--color-text);
-}
-
-.header-right {
+.header-controls {
   display: flex;
   align-items: center;
   gap: var(--spacing-md, 1rem);
 }
 
+.header-divider {
+  width: 1px;
+  height: 32px;
+  background-color: var(--color-border);
+  margin: 0 var(--spacing-sm, 0.5rem);
+}
+
 .clear-button {
   padding: var(--spacing-sm, 0.5rem) var(--spacing-md, 1rem);
-  background-color: var(--color-danger);
+  background-color: #dc3545;
   color: white;
   border: none;
   border-radius: var(--radius-md, 0.5rem);
@@ -183,8 +191,8 @@ onMounted(async () => {
 }
 
 .clear-button:hover {
-  background-color: var(--color-danger);
-  opacity: 0.8;
+  background-color: #c82333;
+  opacity: 0.9;
 }
 
 .messages-container {
@@ -192,6 +200,43 @@ onMounted(async () => {
   overflow-y: auto;
   padding: var(--spacing-lg, 1.5rem);
   scroll-behavior: smooth;
+}
+
+.error-message {
+  text-align: center;
+  padding: var(--spacing-xl, 2rem);
+  color: var(--color-danger);
+  background-color: rgba(220, 53, 69, 0.1);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-lg, 0.75rem);
+  margin: var(--spacing-lg, 1.5rem);
+}
+
+.error-message h2 {
+  margin: 0 0 var(--spacing-md, 1rem) 0;
+  color: var(--color-danger);
+}
+
+.error-message p {
+  margin: 0 0 var(--spacing-lg, 1.5rem) 0;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+.retry-button {
+  padding: var(--spacing-md, 1rem) var(--spacing-lg, 1.5rem);
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md, 0.5rem);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-button:hover {
+  background-color: var(--color-primary-hover);
+  transform: translateY(-1px);
 }
 
 .welcome-message {

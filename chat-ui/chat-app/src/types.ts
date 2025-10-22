@@ -2,11 +2,21 @@
  * Core types for the chat application
  */
 
+export interface ThinkingStep {
+  type: string;
+  title: string;
+  content: string;
+  timestamp: string;
+  duration_ms?: number;
+  metadata?: Record<string, any>;
+}
+
 export interface Message {
   id: string;
   content: string;
   role: 'user' | 'assistant' | 'system';
   timestamp: string;
+  thinkingSteps?: ThinkingStep[];
 }
 
 export interface Model {
@@ -27,6 +37,7 @@ export interface Conversation {
 export interface ChatResponse {
   content: string;
   error?: string;
+  thinkingSteps?: ThinkingStep[];
 }
 
 /**

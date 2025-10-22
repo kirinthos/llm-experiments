@@ -5,15 +5,37 @@
         ref="textareaRef"
         v-model="inputText"
         class="message-input"
-        placeholder="Type your message..."
-        :disabled="isLoading"
+        :placeholder="
+          isDisabled
+            ? 'Cannot send messages - connection error'
+            : 'Type your message...'
+        "
+        :disabled="isLoading || isDisabled"
         @keydown="handleKeydown"
         @input="adjustHeight"
         rows="1"
       />
-      <button class="send-button" :disabled="!canSend" @click="handleSend">
+      <button
+        class="send-button"
+        :disabled="!canSend || isDisabled"
+        @click="handleSend"
+      >
         <span v-if="isLoading" class="loading-spinner">⏳</span>
-        <span v-else>Send</span>
+        <svg
+          v-else
+          class="send-icon"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="m3 3 3 9-3 9 19-9Z" />
+          <path d="m6 12 13 0" />
+        </svg>
       </button>
     </div>
   </div>
@@ -24,6 +46,8 @@ import { ref, computed, nextTick, onMounted } from "vue";
 
 interface Props {
   isLoading: boolean;
+  isDisabled?: boolean;
+  errorMessage?: string;
 }
 
 interface Emits {
@@ -37,7 +61,9 @@ const inputText = ref("");
 const textareaRef = ref<HTMLTextAreaElement>();
 
 const canSend = computed(() => {
-  return !props.isLoading && inputText.value.trim().length > 0;
+  return (
+    !props.isLoading && !props.isDisabled && inputText.value.trim().length > 0
+  );
 });
 
 function handleSend() {
@@ -49,7 +75,7 @@ function handleSend() {
 }
 
 function handleKeydown(event: KeyboardEvent) {
-  if (event.key === "Enter" && !event.shiftKey) {
+  if (event.key === "Enter" && !event.shiftKey && !props.isDisabled) {
     event.preventDefault();
     handleSend();
   }
@@ -82,29 +108,28 @@ onMounted(() => {
 
 <style scoped>
 .input-container {
-  padding: var(--spacing-lg, 1.5rem);
+  padding: 0;
   background-color: var(--color-surface);
   border-top: 1px solid var(--color-border);
 }
 
 .input-wrapper {
   display: flex;
-  gap: var(--spacing-md, 1rem);
   align-items: flex-end;
   max-width: 100%;
 }
 
 .message-input {
   flex: 1;
-  padding: var(--spacing-md, 1rem) var(--spacing-lg, 1.5rem);
-  border: 2px solid var(--color-input-border);
-  border-radius: var(--radius-lg, 0.75rem);
+  padding: var(--spacing-lg, 1.5rem);
+  border: none;
+  border-radius: 0;
   font-size: 1rem;
   background-color: var(--color-input-background);
   color: var(--color-text);
   transition: all 0.2s ease;
   resize: none;
-  min-height: 56px;
+  min-height: 64px;
   max-height: 120px;
   line-height: 1.5;
   font-family: inherit;
@@ -112,8 +137,7 @@ onMounted(() => {
 
 .message-input:focus {
   outline: none;
-  border-color: var(--color-input-focus);
-  box-shadow: 0 0 0 3px var(--color-input-focus);
+  background-color: var(--color-surface);
 }
 
 .message-input:disabled {
@@ -126,32 +150,36 @@ onMounted(() => {
 }
 
 .send-button {
-  padding: var(--spacing-md, 1rem) var(--spacing-lg, 1.5rem);
+  padding: var(--spacing-lg, 1.5rem);
   background-color: var(--color-primary);
   color: var(--color-chat-bubble-user-text);
   border: none;
-  border-radius: var(--radius-lg, 0.75rem);
-  font-size: 1rem;
-  font-weight: 600;
+  border-radius: 0;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-height: 56px;
-  white-space: nowrap;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
 }
 
 .send-button:hover:not(:disabled) {
   background-color: var(--color-primary-hover);
-  transform: translateY(-1px);
-}
-
-.send-button:active:not(:disabled) {
-  transform: translateY(0);
 }
 
 .send-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
+}
+
+.send-icon {
+  transform: rotate(0deg);
+  transition: transform 0.2s ease;
+}
+
+.send-button:hover:not(:disabled) .send-icon {
+  transform: rotate(15deg);
 }
 
 .loading-spinner {
